@@ -3,7 +3,7 @@ let inputDir = {x: 0, y: 0};
 const foodSound = new Audio('music/food.mp3');
 const gameOverSound = new Audio('music/gameover.mp3');
 const moveSound = new Audio('music/move.mp3');
-const musicSound = new Audio('music/Apashe.mp3');
+// Removed non-existent music file
 let speed = 10;
 let score = 0;
 let lastPaintTime = 0;
@@ -11,13 +11,13 @@ let snakeArr = [
     {x: 13, y: 15}
 ];
 
-food = {x: 6, y: 7};
+let food = {x: 6, y: 7};
 
 // Game Functions
 function main(ctime) {
     window.requestAnimationFrame(main);
     // console.log(ctime)
-    if((ctime - lastPaintTime)/1900< 1/speed){
+    if((ctime - lastPaintTime)/1000 < 1/speed){
         return;
     }
     lastPaintTime = ctime;
@@ -42,18 +42,16 @@ function isCollide(snake) {
 function gameEngine(){
     // Part 1: Updating the snake array & Food
     if(isCollide(snakeArr)){
-        gameOverSound.play();
-        musicSound.pause();
+        gameOverSound.play().catch(e => console.log("Audio play failed:", e));
         inputDir =  {x: 0, y: 0}; 
         alert("Game Over. Press any key to play again!");
         snakeArr = [{x: 13, y: 15}];
-        musicSound.play();
         score = 0; 
     }
 
     // If you have eaten the food, increment the score and regenerate the food
     if(snakeArr[0].y === food.y && snakeArr[0].x ===food.x){
-        foodSound.play();
+        foodSound.play().catch(e => console.log("Audio play failed:", e));
         score += 1;
         if(score>hiscoreval){
             hiscoreval = score;
@@ -62,9 +60,15 @@ function gameEngine(){
         }
         scoreBox.innerHTML = "Score: " + score;
         snakeArr.unshift({x: snakeArr[0].x + inputDir.x, y: snakeArr[0].y + inputDir.y});
-        let a = 2;
-        let b = 16;
-        food = {x: Math.round(a + (b-a)* Math.random()), y: Math.round(a + (b-a)* Math.random())}
+        
+        // Generate food in valid position (not on snake body)
+        let newFood;
+        do {
+            let a = 2;
+            let b = 16;
+            newFood = {x: Math.round(a + (b-a)* Math.random()), y: Math.round(a + (b-a)* Math.random())};
+        } while (snakeArr.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+        food = newFood;
     }
 
     // Moving the snake
@@ -103,7 +107,6 @@ function gameEngine(){
 
 
 // Main logic starts here
-musicSound.play();
 let hiscore = localStorage.getItem("hiscore");
 if(hiscore === null){
     hiscoreval = 0;
@@ -111,36 +114,50 @@ if(hiscore === null){
 }
 else{
     hiscoreval = JSON.parse(hiscore);
-    hiscoreBox.innerHTML = "HiScore: " + hiscore;
+    hiscoreBox.innerHTML = "HiScore: " + hiscoreval;
 }
 
 window.requestAnimationFrame(main);
 window.addEventListener('keydown', e =>{
-    inputDir = {x: 0, y: 1} // Start the game
-    moveSound.play();
+    // Only start game and play sound for arrow keys
+    if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        if(inputDir.x === 0 && inputDir.y === 0) {
+            inputDir = {x: 0, y: 1}; // Start the game
+        }
+        moveSound.play().catch(e => console.log("Audio play failed:", e));
+    }
+    
     switch (e.key) {
         case "ArrowUp":
             console.log("ArrowUp");
-            inputDir.x = 0;
-            inputDir.y = -1;
+            if(inputDir.y !== 1) { // Prevent reverse direction
+                inputDir.x = 0;
+                inputDir.y = -1;
+            }
             break;
 
         case "ArrowDown":
             console.log("ArrowDown");
-            inputDir.x = 0;
-            inputDir.y = 1;
+            if(inputDir.y !== -1) { // Prevent reverse direction
+                inputDir.x = 0;
+                inputDir.y = 1;
+            }
             break;
 
         case "ArrowLeft":
             console.log("ArrowLeft");
-            inputDir.x = -1;
-            inputDir.y = 0;
+            if(inputDir.x !== 1) { // Prevent reverse direction
+                inputDir.x = -1;
+                inputDir.y = 0;
+            }
             break;
 
         case "ArrowRight":
             console.log("ArrowRight");
-            inputDir.x = 1;
-            inputDir.y = 0;
+            if(inputDir.x !== -1) { // Prevent reverse direction
+                inputDir.x = 1;
+                inputDir.y = 0;
+            }
             break;
         default:
             break;
